@@ -2,12 +2,23 @@
 
 set -e
 
+SDK_PATH=$(xcrun --show-sdk-path)
+EXTRA_FLAGS="-isysroot $SDK_PATH -isystem $SDK_PATH/usr/include/c++/v1 -isystem $SDK_PATH/usr/include"
+
+CMAKE_MACOS_FLAGS=(
+  -DCMAKE_OSX_ARCHITECTURES=arm64
+  -DCMAKE_SYSROOT=$SDK_PATH
+  -Dprotobuf_HAVE_BUILTIN_ATOMICS=ON
+  "-DCMAKE_CXX_FLAGS=$EXTRA_FLAGS"
+)
+
 ROOT="$PWD"
 PREFIX="${PREFIX:-$ROOT/build/local}"
 echo "PREFIX: $PREFIX"
 
 CMAKE=cmake
 MAKE=make
+
 
 # Load dependencies version
 BASE_DIR=$(
@@ -32,7 +43,7 @@ function build_gtest() {
     # Build gtest
     GTEST_DIR="$ROOT/build/local/src/gtest"
     cd ${GTEST_DIR}/googletest-$GTEST_VERSION
-    $CMAKE -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -H.
+    $CMAKE -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -H. "${CMAKE_MACOS_FLAGS[@]}"
     $MAKE -j4
     $MAKE install
     $MAKE clean
@@ -53,7 +64,8 @@ function build_protobuf() {
     PROTOBUF_DIR="$ROOT/build/local/src/protobuf"
     cd ${PROTOBUF_DIR}/protobuf-$PROTOBUF_VERSION
 
-    $CMAKE -Scmake -B . -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_MODULE_COMPATIBLE=ON
+#    $CMAKE -Scmake -B . -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_MODULE_COMPATIBLE=ON
+    $CMAKE -Scmake -B . -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_MODULE_COMPATIBLE=ON "${CMAKE_MACOS_FLAGS[@]}"
     $CMAKE --build . -j
     $CMAKE --install . --prefix $PREFIX
 
@@ -63,7 +75,8 @@ function build_protobuf() {
 
     # Protobuf plugins
     cd "$ROOT/protobuf-plugin"
-    $CMAKE . -Bbuild -DProtobuf_DIR=$PREFIX/lib/cmake/protobuf
+#    $CMAKE . -Bbuild -DProtobuf_DIR=$PREFIX/lib/cmake/protobuf
+    $CMAKE . -Bbuild -DProtobuf_DIR=$PREFIX/lib/cmake/protobuf "${CMAKE_MACOS_FLAGS[@]}"
     $CMAKE --build build -j
     $CMAKE --install build --prefix $PREFIX
     $CMAKE --build build --target clean

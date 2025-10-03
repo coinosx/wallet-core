@@ -6,11 +6,21 @@
 # Fail if any commands fails
 set -e
 
+SDK_PATH=$(xcrun --show-sdk-path)
+EXTRA_FLAGS="-isysroot $SDK_PATH -isystem $SDK_PATH/usr/include/c++/v1 -isystem $SDK_PATH/usr/include"
+
+CMAKE_MACOS_FLAGS=(
+  -DCMAKE_OSX_ARCHITECTURES=arm64
+  -DCMAKE_SYSROOT=$SDK_PATH
+  -Dprotobuf_HAVE_BUILTIN_ATOMICS=ON
+  "-DCMAKE_CXX_FLAGS=$EXTRA_FLAGS"
+)
+
 echo "#### Generating files... ####"
 tools/generate-files native
 
 echo "#### Building... ####"
-cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ "${CMAKE_MACOS_FLAGS[@]}"
 make -Cbuild -j12 tests TrezorCryptoTests
 
 if [ -x "$(command -v clang-tidy)" ]; then
