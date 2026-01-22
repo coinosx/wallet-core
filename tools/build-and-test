@@ -5,13 +5,15 @@
 
 # Fail if any commands fails
 set -e
+export SDKROOT="$(xcrun --show-sdk-path)"
+export CPLUS_INCLUDE_PATH="$SDKROOT/usr/include/c++/v1"
 
 echo "#### Generating files... ####"
 tools/generate-files native
 
 echo "#### Building... ####"
 cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-make -Cbuild -j12 tests TrezorCryptoTests
+make -Cbuild -j12 TrustWalletCore tests TrezorCryptoTests
 
 if [ -x "$(command -v clang-tidy)" ]; then
     echo "#### Linting... ####"
